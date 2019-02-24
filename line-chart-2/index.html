@@ -1,14 +1,33 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<style> /* set the CSS */
 
+<style type="text/css">
+/* 13. Basic Styling with CSS */
+
+/* Style the lines by removing the fill and applying a stroke */
 .line {
+    fill: none;
+    stroke: #ffab00;
+    stroke-width: 3;
+}
+
+.overlay {
+  fill: none;
+  pointer-events: all;
+}
+
+/* Style the dots by assigning a fill and stroke */
+.dot {
+    fill: #ffab00;
+    stroke: #fff;
+}
+.focus circle {
   fill: none;
   stroke: steelblue;
-  stroke-width: 2px;
 }
 
 </style>
+
 <body>
 
 <!-- load the d3.js library -->
@@ -24,23 +43,13 @@ var margin = {top: 20, right: 20, bottom: 50, left: 70},
 var parseTime = d3.timeParse("%d-%b-%y");
 
 // set the ranges
-var x = d3.scaleTime().range([0, width]);
-var y = d3.scaleLinear().range([height, 0]);
+var xScale = d3.scaleTime().range([0, width]);
+var yScale = d3.scaleLinear().range([height, 0]);
 
 // define the line
 var valueline = d3.line()
-    .x(function(d) { return x(d.date); })
-    .y(function(d) { return y(d.close); });
-
-// append the svg obgect to the body of the page
-// appends a 'group' element to 'svg'
-// moves the 'group' element to the top left margin
-var svg = d3.select("body").append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform",
-          "translate(" + margin.left + "," + margin.top + ")");
+    .x(function(d) { return xScale(d.date); })
+    .y(function(d) { return yScale(d.close); });
 
 // Get the data
 d3.csv("data-2.csv", function(error, data) {
@@ -53,41 +62,51 @@ d3.csv("data-2.csv", function(error, data) {
   });
 
   // Scale the range of the data
-  x.domain(d3.extent(data, function(d) { return d.date; }));
-  y.domain([0, d3.max(data, function(d) { return d.close; })]);
+  xScale.domain(d3.extent(data, function(d) { return d.date; }));
+  yScale.domain([0, d3.max(data, function(d) { return d.close; })]);
 
-  // Add the valueline path.
-  svg.append("path")
-      .data([data])
-      .attr("class", "line")
-      .attr("d", valueline);
 
-  // Add the x Axis
-  svg.append("g")
-      .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(x));
+// 1. Add the SVG to the page and employ #2
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-  // text label for the x axis
-  svg.append("text")
-      .attr("transform",
-            "translate(" + (width/2) + " ," +
-                           (height + margin.top + 20) + ")")
-      .style("text-anchor", "middle")
-      .text("Date");
+// 3. Call the x axis in a group tag
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(xScale)); // Create an axis component with d3.axisBottom
 
-  // Add the y Axis
-  svg.append("g")
-      .call(d3.axisLeft(y));
+// 4. Call the y axis in a group tag
+svg.append("g")
+    .attr("class", "y axis")
+    .call(d3.axisLeft(yScale)); // Create an axis component with d3.axisLeft
 
-  // text label for the y axis
-  svg.append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("y", 0 - margin.left)
-      .attr("x",0 - (height / 2))
-      .attr("dy", "1em")
-      .style("text-anchor", "middle")
-      .text("Value");
+// 9. Append the path, bind the data, and call the line generator
+svg.append("path")
+    .datum(data) // 10. Binds data to the line
+    .attr("class", "line") // Assign a class for styling
+    .attr("d", valueline); // 11. Calls the line generator
 
+// 12. Appends a circle for each datapoint
+svg.selectAll(".dot")
+    .data(data)
+  .enter().append("circle") // Uses the enter().append() method
+    .attr("class", "dot") // Assign a class for styling
+    .attr("cx", function(d) {
+      return xScale(d.date)
+    })
+    .attr("cy", function(d) {
+      return yScale(d.close)
+    })
+    .attr("r", 5)
+      .on("mouseover", function(a, b, c) {
+        console.log(a)
+        this.attr('class', 'focus')
+    })
+      .on("mouseout", function() {  })
 });
 
 </script>
