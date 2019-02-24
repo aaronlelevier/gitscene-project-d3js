@@ -34,34 +34,65 @@
 
 <!-- Load in the d3 library -->
 <script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="https://d3js.org/d3-queue.v3.min.js"></script>
 <script>
 
-// 2. Use the margin convention practice
-var margin = {top: 50, right: 50, bottom: 50, left: 50}
-  , width = window.innerWidth - margin.left - margin.right // Use the window's width
-  , height = window.innerHeight - margin.top - margin.bottom; // Use the window's height
+d3.csv("./commits-by-date.csv", function(data) {
 
-// The number of datapoints
-var n = 21;
+  // 2. Use the margin convention practice
+  var margin = {top: 50, right: 50, bottom: 50, left: 50}
+    , width = window.innerWidth - margin.left - margin.right // Use the window's width
+    , height = window.innerHeight - margin.top - margin.bottom; // Use the window's height
 
-// 5. X scale will use the index of our data
-var xScale = d3.scaleLinear()
-    .domain([0, n-1]) // input
-    .range([0, width]); // output
+  var commitsPerDay = {};
+  var key;
+  var date;
 
-// 6. Y scale will use the randomly generate number
-var yScale = d3.scaleLinear()
-    .domain([0, 1]) // input
-    .range([height, 0]); // output
+  var months = {};
+  for(var i=0; i < 12; i++) {
+    if (i < 10) {
+      key = `0${i+1}`
+    } else {
+      key = `${i+1}`
+    }
+    months[i]=key;
+  }
+
+  var commitsList = [];
+
+  data.forEach(function(d) {
+    date = d3.isoParse(d['date']);
+    key = `${date.getFullYear()}-${months[date.getMonth()]}-${date.getDate()}`;
+
+    if (key in commitsPerDay) {
+      commitsPerDay[key]+= 1
+    } else {
+      commitsPerDay[key] = 1
+    }
+  });
+  console.log(commitsPerDay);
+
+  // convert object to list
+  for (key in commitsPerDay) {
+    console.log('key: '+ key)
+    commitsList.push({'date': key, 'count': commitsPerDay[key]})
+  }
+
+  console.log('commitsList')
+  console.log(commitsList)
+
+var xScale = d3.scaleTime().range([0, width]);
+var yScale = d3.scaleLinear().range([height, 0]);
 
 // 7. d3's line generator
 var line = d3.line()
-    .x(function(d, i) { return xScale(i); }) // set the x values for the line generator
-    .y(function(d) { return yScale(d.y); }) // set the y values for the line generator
+    .x(function(d, i) { return xScale(d.date); }) // set the x values for the line generator
+    .y(function(d) { return yScale(d.count); }) // set the y values for the line generator
     .curve(d3.curveMonotoneX) // apply smoothing to the line
 
-// 8. An array of objects of length N. Each object has key -> value pair, the key being "y" and the value is a random number
-var dataset = d3.range(n).map(function(d) { return {"y": d3.randomUniform(1)() } })
+var dataset = commitsList;
+console.log("dataset")
+console.log(dataset)
 
 // 1. Add the SVG to the page and employ #2
 var svg = d3.select("body").append("svg")
@@ -100,6 +131,8 @@ svg.selectAll(".dot")
         this.attr('class', 'focus')
 		})
       .on("mouseout", function() {  })
+
+});
 //       .on("mousemove", mousemove);
 
 //   var focus = svg.append("g")
